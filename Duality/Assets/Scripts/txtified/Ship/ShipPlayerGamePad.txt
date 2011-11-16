@@ -1,0 +1,58 @@
+using UnityEngine;
+
+// rotate gun while turning ship
+	// are there no problems with that NOW ? ************************************************************************
+
+public class ShipPlayerGamePad : ShipPlayer {
+	public string horizontalGunAxis;
+	public string verticalGunAxis;
+	
+	Vector3 worldGunFaceDir;
+	
+	protected override void Start () {
+		base.Start();
+		
+		worldGunFaceDir = faceDir;
+	}
+
+	protected override void Update () {
+		if (on && gm.on) {
+			base.Update();
+			
+			float h = Mathf.Round(Input.GetAxisRaw(horizontalGunAxis));
+			float v = Mathf.Round(Input.GetAxisRaw(verticalGunAxis));
+			
+			Vector3 dir = Vector3.zero;
+			
+			if (Mathf.Abs(h) > Mathf.Abs(v))
+				dir = Vector3.right * h; // horizontal
+			else// if (Mathf.Abs(h) < Mathf.Abs(v))
+				dir = Vector3.up * v; // vertical
+				
+			if (dir != Vector3.zero) {
+				myGun.rotation = Quaternion.LookRotation(dir, Vector3.forward)
+					* Quaternion.Euler(0, -90, 0);
+					
+				worldGunFaceDir = dir;
+			}
+			else if (angleTurned != 0) {
+				myGun.rotation = Quaternion.LookRotation(worldGunFaceDir, Vector3.forward)
+					* Quaternion.Euler(0, -90, 0);
+			}
+			
+			if (mInput.shoot)
+				Shoot(worldGunFaceDir);
+		}
+	}
+	
+	protected override void LinearPush () {
+		// using the "Raw" version instead of the normal one doesn't seem to change anything analog sticks		
+			// print(Input.GetAxisRaw(horizontalMoveAxis) + " " + Input.GetAxisRaw(verticalMoveAxis));
+			
+		// here it is known that one of the movement axes are 0
+		if (Input.GetAxisRaw(horizontalMoveAxis) != 0)
+			mInput.moveAxes = Vector2.right * Mathf.Sign(Input.GetAxisRaw(horizontalMoveAxis));
+		else// if (Input.GetAxisRaw(verticalMoveAxis) != 0)
+			mInput.moveAxes = Vector2.up * Mathf.Sign(Input.GetAxisRaw(verticalMoveAxis));
+	}
+}

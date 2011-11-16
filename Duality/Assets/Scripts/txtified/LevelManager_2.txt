@@ -1,0 +1,14 @@
+using UnityEngine;
+using System.Collections;
+
+public class LevelManager_2 : MonoBehaviour {
+	/*magic number replacaments ===*/
+	float gridBaseSize = 10; // built-in plane mesh size
+	float gridDepthOffset = -.2f;
+	float cameraDepthOffset = 10;
+	/*=== magic number replacaments*/
+	
+	void Awake () {
+		
+	}
+}

@@ -1,0 +1,64 @@
+using UnityEngine;
+
+public class Core : MonoBehaviour {
+	public string team;
+
+	[System.NonSerialized]
+	public int health;
+	
+	public ShipBase ship; // later teams should/could/would be done more nicely ***********************************
+
+	public bool isYin;
+	
+	[System.NonSerialized]
+	public Material mMaterial;
+	
+	GameManager gm;
+	//LevelManager lm;
+	
+	void Start () {
+		gm = GameObject.FindWithTag("GameManager").GetComponent<GameManager>();
+		//lm = GameObject.FindWithTag("LevelManager").GetComponent<LevelManager>();
+		
+		mMaterial = renderer.material;
+		mMaterial.color = isYin ? gm.colorYin : gm.colorYang;
+		
+		health = gm.coreMaxHealth;
+	}
+	
+	void OnTriggerEnter (Collider c) {
+		if (c.gameObject.layer == 11) {
+			health -= gm.explosionDmg;
+					
+			if (health <= 0) {
+				health = 0;
+				ship.health = 0;
+				ship.on = false;
+				gm.on = false;
+			}
+		}
+		else {
+			// !! !! cores are tagged as ship !! !!
+			
+			// if collided with something it is sure to be a shot due to how the collision action matrix is set up
+				// (hopefully)
+				
+			Shot shot = c.GetComponent<Shot>(); // should always have one as there's nothing else to collide with *******
+			
+			if (gm.friendlyFire || (!gm.friendlyFire && shot.instantiator != ship.gameObject)) {
+				if (shot.isYin != isYin) {
+					health -= gm.shotDmg;
+					
+					//health = Mathf.Clamp(health, 0, maxHealth);
+					
+					if (health <= 0) {
+						health = 0;
+						ship.health = 0;
+						ship.on = false;
+						gm.on = false;
+					}
+				}
+			}
+		}
+	}
+}

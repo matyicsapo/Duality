@@ -1,0 +1,41 @@
+using UnityEngine;
+
+public class ShipPlayerMouse : ShipPlayer {
+	protected override void Update () {
+		if (on && gm.on) {
+			base.Update();
+			
+			Vector3 wMouse = GameObject.FindWithTag("MainCamera").camera.ScreenToWorldPoint(Input.mousePosition);
+			
+			Vector3 shootTargetPos = new Vector3(wMouse.x, wMouse.y, shot.position.z);
+			
+			if (Mathf.Round(shootTargetPos.x) != Mathf.Round(mTransform.position.x)
+					|| Mathf.Round(shootTargetPos.y) != Mathf.Round(mTransform.position.y)) {
+				// can't target self
+				
+				float dX = shootTargetPos.x - mTransform.position.x;
+				float dY = shootTargetPos.y - mTransform.position.y;
+				
+				Vector3 dir;
+				
+				if (Mathf.Abs(dX) > Mathf.Abs(dY))
+					dir = Vector3.right * dX; // horizontal
+				else // if (Mathf.Abs(dX) < Mathf.Abs(dY)) // not even exact bisector is a deadzone
+					dir = Vector3.up * dY; // vertical
+					
+				myGun.rotation = Quaternion.LookRotation(dir, Vector3.forward)
+					* Quaternion.Euler(0, -90, 0);
+				
+				if (mInput.shoot)
+					Shoot(dir);
+			}
+		}
+	}
+	
+	protected override void LinearPush () {
+		// nothing special to do - GetAxisRaw is sufficient for keyboard input
+			// "Since input is not smoothed, keyboard input will always be either -1, 0 or 1." - the doc
+			
+		mInput.moveAxes = new Vector2(Input.GetAxisRaw(horizontalMoveAxis), Input.GetAxisRaw(verticalMoveAxis));
+	}
+}

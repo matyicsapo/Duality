@@ -1,0 +1,168 @@
+using UnityEngine;
+using System.Collections.Generic;
+
+public class GameManager : MonoBehaviour {
+	public Color colorYin;
+	public Color colorYang;
+	
+	public bool friendlyFire;
+	
+	public bool on = true;
+	
+	[System.Serializable]
+	public class Team {
+		public string teamName;
+		public Color teamColor;
+		
+		public List<ShipBase> ships;
+		public List<Core> cores;
+		
+		/*Team () {
+			ships = new List<Ship>();
+			cores = new List<Core>();
+		}*/
+	}
+	public List<Team> teams;
+	
+	public int shipMaxHealth;
+	
+	public int shotDmg;
+	public float shootInterval;
+	
+	public float colorChangeInterval;
+	
+	public int coreMaxHealth;
+	
+	public int maxEnergy;
+	public float energyRecoveryRate;
+	public float energyRecoveryDelay;
+	
+	public int freezeDmgPerSec;
+	public float overheatShutdownInSecs;
+	public float coolingSpd;
+	public float coolDelay;
+	public int moveHeat;
+	
+	[System.Serializable]
+	public class Energy {
+		public int costShoot;
+		public int costColorChange;
+		public int costMove;
+	}
+	public Energy energy;
+	
+	public float moveTime;
+	
+	public Transform explosionBlock;
+	GameObject[] explodingBullets;
+	public int minExplosionForce;
+	public int maxExplosionForce;
+	public float explosionDuration;
+	public int explosionDmg;
+	
+	public float shotBlinkInterval;
+	public float shotLifeTime;
+	public float shotSpd;
+	
+	LevelManager lm;
+	
+	void OnGUI () {
+		if (!on) {
+			if (GUI.Button(new Rect(Screen.width / 2 - 100 / 2, Screen.height / 2 - 30 / 2, 100, 30), "Restart")) {
+				Application.LoadLevel(0);
+			}
+		}
+	}
+	
+	void Start () {
+		lm = GameObject.FindWithTag("LevelManager").GetComponent<LevelManager>();
+	}
+	
+	public void Explode (GameObject g1, GameObject g2) {
+		if (explodingBullets != null) {
+			for (int i = 0; i < 2; i++) {
+				if (explodingBullets[i] == g1 || explodingBullets[i] == g2) {
+					return;
+				}
+			}
+		}
+		
+		explodingBullets = new GameObject[] {g1, g2};
+		
+		Vector2 pos =
+			new Vector2(
+				Mathf.Round((g1.transform.position.x + g2.transform.position.x) / 2),
+				Mathf.Round((g1.transform.position.y + g2.transform.position.y) / 2));
+				
+		GameObject explosionHolder = new GameObject("explosion");
+		explosionHolder.transform.position = pos;
+		Destroy(explosionHolder, explosionDuration);
+		
+		List<Vector2> explosionBlockPositions = new List<Vector2>();
+		
+		List<Vector2> adjacentPositions = new List<Vector2>();
+		
+		// all 4 adjacent nodes not considering walls( and maybe else) only level bounds
+		Vector2
+		a = new Vector2(pos.x + 1, pos.y); // right adjacent
+		if (lm.InLevelBounds(a)) // is the position reachable(inside level bounds)
+			adjacentPositions.Add(a);
+			
+		a = new Vector2(pos.x - 1, pos.y); // left adjacent
+		if (lm.InLevelBounds(a))
+			adjacentPositions.Add(a);
+			
+		a = new Vector2(pos.x, pos.y + 1); // lower adjacent
+		if (lm.InLevelBounds(a))
+			adjacentPositions.Add(a);
+			
+		a = new Vector2(pos.x, pos.y - 1); // upper adjacent
+		if (lm.InLevelBounds(a))
+			adjacentPositions.Add(a);
+			
+		int explosionForce = Random.Range(minExplosionForce, maxExplosionForce + 1);
+		
+		if (explosionForce != 0) {
+			explosionBlockPositions.Add(pos);
+		}
+			
+		foreach (Vector2 v in adjacentPositions) {
+			for (int i = 1; i <= explosionForce; i++) {
+				Vector2 nextPos = pos + (v - pos) * i;
+				
+				if (lm.blockPosList.Exists(l => HlpVect.EqualInt(l, nextPos))) {
+					break;
+				}
+				else
+					explosionBlockPositions.Add(nextPos);
+			}
+		}
+		
+		foreach (Vector2 v in explosionBlockPositions) {
+			Transform t = Instantiate(explosionBlock,
+				v,
+				explosionBlock.rotation) as Transform;
+			t.parent = explosionHolder.transform;
+		}
+	}
+	
+	/*
+	public Rect screenRect;
+	public Texture t;
+	public Material m;
+	public Rect sourceRect;
+	
+	void OnGUI()
+	{
+		if (Event.current.type == EventType.Repaint)
+		{
+			Graphics.DrawTexture(
+				screenRect,
+				t,
+				sourceRect,
+				0, 0, 0, 0,
+				m);
+		}
+	}
+	*/
+}

@@ -1,0 +1,585 @@
+/*
+		Vector2[] inEyeSights = new Vector2[4];
+		
+		if (Mathf.Abs(vToPos.x) < Mathf.Abs(vToPos.y)) {
+			inEyeSights[0] = new Vector2(target.x,						-Mathf.Sign(vToPos.y) * joker);
+			inEyeSights[1] = new Vector2(-Mathf.Sign(vToPos.x) * joker,	target.y);
+			inEyeSights[2] = new Vector2(Mathf.Sign(vToPos.x) * joker,	target.y);
+			inEyeSights[3] = new Vector2(target.x,						Mathf.Sign(vToPos.y) * joker);
+		}
+		else {
+			inEyeSights[0] = new Vector2(-Mathf.Sign(vToPos.x) * joker,	target.y);
+			inEyeSights[1] = new Vector2(target.x,						-Mathf.Sign(vToPos.y) * joker);
+			inEyeSights[2] = new Vector2(target.x,						Mathf.Sign(vToPos.y) * joker);
+			inEyeSights[3] = new Vector2(Mathf.Sign(vToPos.x) * joker,	target.y);
+		}
+		
+		List<Vector2> allInEyeSightPositions = new List<Vector2>();
+		
+		bool alreadyInEyeSight = false;
+		
+		foreach (Vector2 inEyeSightDummy in inEyeSights) {
+			Vector2 anInEyeSightPos = -Vector2.one;
+			
+			Vector2 eyeSightBase;
+			Vector2 axis;
+			int dir;
+			int forHighValue;
+			
+			if (Mathf.Abs(inEyeSightDummy.x) == joker) {
+				axis = Vector2.right;
+				dir = (int)Mathf.Sign(inEyeSightDummy.x);
+				
+				eyeSightBase = new Vector2(0, target.y);
+				
+				forHighValue = -(int)vToPos.x * dir;
+				if (vToPos.x != 0)
+					forHighValue++;
+			}
+			else { // if (Mathf.Abs(inEyeSightDummy.y) == joker) {
+				axis = Vector2.up;
+				dir = (int)Mathf.Sign(inEyeSightDummy.y);
+				
+				eyeSightBase = new Vector2(target.x, 0);
+				
+				forHighValue = -(int)vToPos.y * dir;
+				if (vToPos.y != 0)
+					forHighValue++;
+			}
+			
+			//eyeSightBase = Vector2.Scale((Vector2.one - dirVect), target);
+			
+			if (forHighValue <= 0) {
+				Vector2 m = eyeSightBase + Vector2.Scale(target, axis) + axis * dir;
+				
+				if (lm.CanTraverse(m)) {
+					anInEyeSightPos = m;
+					allInEyeSightPositions.Add(anInEyeSightPos);
+				}
+				
+				continue;
+			}
+			
+			for (int i = 1; i < forHighValue; i++) {
+				Vector2 m = eyeSightBase + Vector2.Scale(target, axis) + i * axis * dir;
+				
+				if (lm.InLevelBounds(m)) {
+					if (lm.Occupied(m)) {
+						if (m == from) {
+							anInEyeSightPos = from;
+							alreadyInEyeSight = true;
+						}
+						
+						break;
+						
+						// if (i != 1) { break; } else { // can't get in eye sight from here break; }
+					}
+					
+					anInEyeSightPos = m;
+				}
+			}
+			
+			if (alreadyInEyeSight) {
+				allInEyeSightPositions.Add(anInEyeSightPos);
+				break;
+			}
+			
+			if (anInEyeSightPos != -Vector2.one) {
+				allInEyeSightPositions.Add(anInEyeSightPos);
+		
+				//************************************************
+				//List<Node> path = Path(from, anInEyeSightPos); if (path != null) { VisualisePath(path); return; }
+			}
+		}
+*/
+
+using UnityEngine;
+using System.Collections.Generic;
+using System.Linq; // List.OrderBy ==> extension method <==
+
+/* *****************************************************************************************************************
+New A.I. functionality
+-escape(prolly to base) defending self
+-defend base
+*/
+
+/*******************************************************************************************************************
+Handling other ship
+-now: done hardcodedly both in 'StickyBitch()' and 'GetInEyeSightWith()'
+*/
+
+/* *****************************************************************************************************************
+Other stuff
+-'OrientGunTowards()' how to where to call needs some thought given
+-'AlreadyInEyeSight()' could be used in 'FindInEyeSightAll()'
+*/
+
+public class ShipAI : ShipBase {
+	public ShipBase otherShip;
+	
+	class Node {
+		public Node parentNode = null;
+		
+		public Vector2 wPos = Vector2.zero;
+		
+		public int H = 0;
+		public int G = 0;
+		public int F = 0;
+	}
+	
+	public Transform pathBlock; // DEBUG
+	List<Transform> pathBlocks;
+	List<Node> path;
+	
+	Node nextPathNode;
+	
+	Vector2 lastPathTo;
+	Vector2 lastGetInEyeSightWithPos;
+	
+	Vector3 worldGunFaceDir;
+	
+	protected override void Start () {
+		base.Start();
+		
+		pathBlocks = new List<Transform>(); // DEBUG
+		
+		lastPathTo = -Vector2.one;
+	}
+	
+	protected override void InputHandling () {
+		mInput = new BaseInput();
+		
+		//StickyBitch(otherShip.trgtPos);
+		//StickyBitch(otherShip.core.transform.position);
+		
+		GetInEyeSightWith(otherShip.trgtPos);
+		//GetInEyeSightWith(otherShip.core.transform.position);
+		
+		OrientGunTowards(otherShip.trgtPos);
+		
+		//FindInEyeSightAll(otherShip.core.transform.position);
+		
+		if (mInput.shoot && Time.time - lastShotTime > gm.shootInterval) {
+			Shoot(worldGunFaceDir);
+		}
+	}
+	
+	void OrientGunTowards (Vector2 pos) {
+		Vector2 d = pos - trgtPos;
+		
+		if (Mathf.Abs(d.x) > Mathf.Abs(d.y))
+			worldGunFaceDir = Vector3.right * d.x;
+		else
+			worldGunFaceDir = Vector3.up * d.y;
+			
+		myGun.rotation = Quaternion.LookRotation(worldGunFaceDir, Vector3.forward) * Quaternion.Euler(0, -90, 0);
+	}
+	
+	protected override void Update () {
+		if (on && gm.on) {
+			base.Update();
+			
+			if (!HlpVect.EqualInt(mInput.moveAxes, Vector2.zero)) {
+				Move();
+				//OrientShip();
+			}
+		}
+	}
+	
+	void FindInEyeSightAll (Vector2 pos) {
+		lastGetInEyeSightWithPos = pos;
+		
+		//print(AlreadyInEyeSight(pos));
+	
+		int joker = 999;
+	
+		Vector2 vToPos = pos - trgtPos;
+		
+		Vector2[] inEyeSights = new Vector2[4];
+		
+		// **********************might want to handle already being in eye sight some other way ********************
+		/** *************************************************************************** Pointless if all is checked*/
+		// not pointless even if all is checked 'cause if we're already in eye sight then it's with the first one
+			// and the first one is based on this if-else and without this it would do other, harder extra work
+		if (Mathf.Abs(vToPos.x) < Mathf.Abs(vToPos.y)) {
+			inEyeSights[0] = new Vector2(pos.x, 						-Mathf.Sign(vToPos.y) * joker);
+			inEyeSights[1] = new Vector2(-Mathf.Sign(vToPos.x) * joker, pos.y);
+			inEyeSights[2] = new Vector2(Mathf.Sign(vToPos.x) * joker, 	pos.y);
+			inEyeSights[3] = new Vector2(pos.x, 						Mathf.Sign(vToPos.y) * joker);
+		}
+		else {
+			inEyeSights[0] = new Vector2(-Mathf.Sign(vToPos.x) * joker, pos.y);
+			inEyeSights[1] = new Vector2(pos.x, 						-Mathf.Sign(vToPos.y) * joker);
+			inEyeSights[2] = new Vector2(pos.x, 						Mathf.Sign(vToPos.y) * joker);
+			inEyeSights[3] = new Vector2(Mathf.Sign(vToPos.x) * joker, 	pos.y);
+		}
+		
+		List<Vector2> allInEyeSightPositions = new List<Vector2>();
+		
+		bool alreadyInEyeSight = false;
+		
+		foreach (Vector2 inEyeSightDummy in inEyeSights) {
+			Vector2 anInEyeSightPos = -Vector2.one;
+			
+			Vector2 eyeSightBase;
+			Vector2 dirVect;
+			int dir;
+			int forHighValue;
+			
+			if (Mathf.Abs(inEyeSightDummy.x) == joker) {
+				dirVect = Vector2.right;
+				dir = (int)Mathf.Sign(inEyeSightDummy.x);
+				
+				eyeSightBase = new Vector2(0, pos.y);
+				
+				forHighValue = -(int)vToPos.x * dir;
+				if (vToPos.x != 0)
+					forHighValue++;
+			}
+			else { // if (Mathf.Abs(inEyeSightDummy.y) == joker) {
+				dirVect = Vector2.up;
+				dir = (int)Mathf.Sign(inEyeSightDummy.y);
+				
+				eyeSightBase = new Vector2(pos.x, 0);
+				
+				forHighValue = -(int)vToPos.y * dir;
+				if (vToPos.y != 0)
+					forHighValue++;
+			}
+			
+			//eyeSightBase = Vector2.Scale((Vector2.one - dirVect), pos);
+			
+			if (forHighValue <= 0) {
+				Vector2 m = eyeSightBase + Vector2.Scale(pos, dirVect) + dirVect * dir;
+				
+				if (CanGoTo(m)) {
+					anInEyeSightPos = m;
+					allInEyeSightPositions.Add(anInEyeSightPos);
+				}
+				
+				continue;
+			}
+			
+			for (int i = 1; i < forHighValue; i++) {
+				Vector2 m = eyeSightBase + Vector2.Scale(pos, dirVect) + i * dirVect * dir;
+				
+				if (lm.InLevelBounds(m)) {
+					if (Occupied(m)) {
+						if (m == trgtPos) {
+							anInEyeSightPos = trgtPos;
+							alreadyInEyeSight = true;
+						}
+						
+						break;
+						
+						// if (i != 1) { break; } else { // can't get in eye sight from here break; }
+					}
+					
+					anInEyeSightPos = m;
+				}
+			}
+			
+			if (alreadyInEyeSight) {
+				allInEyeSightPositions.Add(anInEyeSightPos);
+				break;
+			}
+			
+			if (anInEyeSightPos != -Vector2.one) {
+				allInEyeSightPositions.Add(anInEyeSightPos);
+			}
+		}
+		
+		foreach (Transform t in pathBlocks) {
+			//if (t != null)
+				Destroy(t.gameObject);
+		}
+		
+		pathBlocks = new List<Transform>();
+		
+		if (alreadyInEyeSight) {
+			pathBlocks.Add(Instantiate(pathBlock,
+					new Vector3(allInEyeSightPositions[0].x, allInEyeSightPositions[0].y, -1), Quaternion.identity)
+				as Transform);
+				
+			// already in eye sight so no path is checking is needed either
+		}
+		else {
+			if (allInEyeSightPositions.Count != 0) {
+				pathBlocks.Add(Instantiate(pathBlock,
+						new Vector3(allInEyeSightPositions[0].x, allInEyeSightPositions[0].y, -1),
+					Quaternion.identity) as Transform);
+				
+				Path(allInEyeSightPositions[0]);
+				
+				List<Node> bestPath;
+				bestPath = nextPathNode != null ? path : null;
+				
+				for (int i = 1; i < allInEyeSightPositions.Count; i++) {
+					pathBlocks.Add(Instantiate(pathBlock,
+							new Vector3(allInEyeSightPositions[i].x, allInEyeSightPositions[i].y, -1),
+						Quaternion.identity) as Transform);
+						
+					Path(allInEyeSightPositions[i]);
+					if (nextPathNode != null) {
+						// order of conditions matters !! !!
+						if (bestPath == null || path.Count < bestPath.Count)
+							bestPath = path;
+					}
+				}
+				
+				if (bestPath != null) {
+					foreach (Node n in bestPath) {
+						Transform t = Instantiate(pathBlock,
+							new Vector3(n.wPos.x, n.wPos.y, -2), Quaternion.identity) as Transform;
+						t.renderer.material.color = new Color(1, 0, 0, .5f);
+						pathBlocks.Add(t);
+					}
+					
+					nextPathNode = bestPath[1];
+				}
+			}
+		}
+	}
+	
+	bool AlreadyInEyeSight (Vector2 pos) {
+		Vector2 vToPos = pos - trgtPos;
+		
+		if ((int)vToPos.x == 0 || (int)vToPos.y == 0) {
+			int dir;
+			int forHighValue;
+			Vector2 dirVect;
+			
+			if (vToPos.x == 0) {
+				dir = (int)Mathf.Sign(-vToPos.y);
+				forHighValue = (int)Mathf.Abs(vToPos.y);
+				dirVect = Vector2.up;
+			}
+			else {
+				dir = (int)Mathf.Sign(-vToPos.x);
+				forHighValue = (int)Mathf.Abs(vToPos.x);
+				dirVect = Vector2.right;
+			}
+			
+			for (int i = 1; i < forHighValue; i++) {
+				Vector2 m = pos + i * dirVect * dir;
+				
+				if (Occupied(m)) {
+					return false;
+				}
+			}
+			
+			return true;
+		}
+		
+		return false;
+	}
+	
+	void GetInEyeSightWith (Vector2 pos) {
+		if (!HlpVect.EqualInt(lastGetInEyeSightWithPos, pos))
+			FindInEyeSightAll(pos);
+		
+		if (iTween.Count(gameObject, "MoveBy") == 0) { /// && couldMove) {
+			if (nextPathNode != null) {
+				if (!HlpVect.EqualInt(nextPathNode.wPos, otherShip.trgtPos) && !AlreadyInEyeSight(pos)) {
+					//if (iTween.Count(gameObject, "MoveBy") == 0) {
+						mInput.moveAxes = nextPathNode.wPos - trgtPos;
+						
+						if(nextPathNode.parentNode != null
+								&& energy >= gm.energy.costMove && !coolinDown)
+							nextPathNode = nextPathNode.parentNode;
+					//}
+				}
+				else
+					mInput.shoot = true;
+			}
+		}
+	}
+	
+	void StickyBitch (Vector2 pos) {
+		// is already at 'pos' or is jusssst making the move towards it
+		bool alreadySetThere = HlpVect.EqualInt(trgtPos, pos);
+		
+		if (!alreadySetThere) {
+			bool sameGoal = HlpVect.EqualInt(lastPathTo, pos);
+				
+			if (!sameGoal) {
+				Path(pos);
+			}
+			
+			// if there is a path (nextPathNode != null)
+			// if not already moving
+			// if nextPathNode is not the target node (target ship moved right in front of us)
+			if (nextPathNode != null) {// && iTween.Count(gameObject, "MoveBy") == 0) {
+				if (!HlpVect.EqualInt(nextPathNode.wPos, pos)) {
+						
+					if (!HlpVect.EqualInt(nextPathNode.wPos, otherShip.trgtPos)) {
+						if (iTween.Count(gameObject, "MoveBy") == 0) {
+							mInput.moveAxes = nextPathNode.wPos - trgtPos;
+							
+							if(nextPathNode.parentNode != null
+									&& energy >= gm.energy.costMove)
+								nextPathNode = nextPathNode.parentNode;
+						}
+					}
+					else {
+						// if path became blocked by other ship then just try another path
+							// (it's okay to let this update cycle go)
+						Path(pos);
+					}
+				}
+			}
+		}
+	}
+	
+	void Path (Vector2 to) {
+		if (lm.InLevelBounds(to)) {
+			lastPathTo = to;
+			
+			// currNode is the node with the lowest F - for starting out it's the goal node which is the
+				// at start it's the goal position since the algorithm works backwards
+			Node currNode = new Node();
+			currNode.wPos = to;
+			
+			// endNode is the current position
+			Node endNode = new Node();
+			endNode.wPos = trgtPos;
+			endNode.parentNode = null;
+			
+			// creating the closed list - the list holding the nodes connecting the 2 ends(inclusive)
+			List<Node> closedList = new List<Node>();
+			closedList.Add(currNode);
+			
+			// creating the open list - to hold potential nodes for closed list
+			List<Node> openList = new List<Node>();
+			
+			// whether the algorithm has to search on or it's finished
+			bool unresolved = true;
+			
+			do {
+				List<Vector2> adjacentPositions = new List<Vector2>();
+				
+				// all 4 adjacent nodes not considering walls( and maybe else) only level bounds
+				Vector2
+				a = new Vector2(currNode.wPos.x + 1, currNode.wPos.y); // right adjacent
+				if (lm.InLevelBounds(a)) // is the position reachable(inside level bounds)
+					adjacentPositions.Add(a);
+					
+				a = new Vector2(currNode.wPos.x - 1, currNode.wPos.y); // left adjacent
+				if (lm.InLevelBounds(a))
+					adjacentPositions.Add(a);
+					
+				a = new Vector2(currNode.wPos.x, currNode.wPos.y + 1); // lower adjacent
+				if (lm.InLevelBounds(a))
+					adjacentPositions.Add(a);
+					
+				a = new Vector2(currNode.wPos.x, currNode.wPos.y - 1); // upper adjacent
+				if (lm.InLevelBounds(a))
+					adjacentPositions.Add(a);
+					
+				foreach (Vector2 v in adjacentPositions) {				
+					// check whether it is the endNode(the current position, not the goal(backwards, remember?)) *****
+					if (HlpVect.EqualInt(endNode.wPos, v)) {
+						unresolved = false;
+						
+						nextPathNode = currNode; // the node to go to
+						
+						/************************************************************************************/
+						/* storing the whole path Node by Node, destroying the former path using a List then
+							populating a new one while instantiating the new path blocks using the stored path
+						for the sole purpose of showing the path */
+						path = new List<Node>();
+						path.Add(endNode);
+						path.Add(currNode);
+						unresolved = true;
+						do {
+							if (currNode.parentNode != null) {
+								currNode = currNode.parentNode;
+								path.Add(currNode);
+							}
+							else
+								unresolved = false;
+						} while (unresolved);
+						
+						/*
+						foreach (Transform t in pathBlocks) {
+							Destroy(t.gameObject);
+						}
+						
+						pathBlocks = new List<Transform>();
+						
+						GameObject pathHolder = new GameObject("pathHolder" + Random.value);
+						
+						Color color = new Color(Random.value, Random.value, Random.value);
+						
+						foreach (Node n in path) {
+							Transform t = Instantiate(pathBlock,
+								new Vector3(n.wPos.x, n.wPos.y, -1), Quaternion.identity) as Transform;
+							t.renderer.material.color = color;
+							t.parent = pathHolder.transform;
+							pathBlocks.Add(t);
+						}
+						*/
+						/************************************************************************************/
+						
+						break;
+					}
+				}
+				
+				// check for the next best node
+				if (unresolved) {
+					foreach (Vector2 v in adjacentPositions) {
+						bool valid =
+								!lm.blockPosList.Exists(l => HlpVect.EqualInt(l, v))
+							&& 	!lm.cores.Exists(l => HlpVect.EqualInt(l.transform.position, v))
+							&& 	!closedList.Exists(l => HlpVect.EqualInt(l.wPos, v))
+							&& 	!HlpVect.EqualInt(v, otherShip.trgtPos);
+						if (valid) {
+							// searches for node on this (adjacent) position in the openList
+							Node an = openList.Find(l => HlpVect.EqualInt(l.wPos, v));
+							
+							if (an != null) {
+								// it's already on the openList
+								
+								int newG = currNode.G + 1;
+								if (newG < an.G) {
+									// this is a better path
+									an.G = newG;
+									an.F = newG + an.H;
+									an.parentNode = currNode;
+								}
+							}
+							else {
+								Node newOpenNode = new Node();
+								newOpenNode.parentNode = currNode;
+								newOpenNode.wPos = v;
+								newOpenNode.G = currNode.G + 1;
+								newOpenNode.H = (int)(Mathf.Abs(endNode.wPos.x - v.x)
+										+ Mathf.Abs(endNode.wPos.y - v.y));
+								newOpenNode.F = newOpenNode.G + newOpenNode.H;
+								openList.Add(newOpenNode);
+							}
+						}
+					}
+					
+					if (openList.Count == 0) {
+						// there are no more nodes in the openList - no path
+						unresolved = false;
+						
+						nextPathNode = null;
+					}
+					else {
+						// after refreshing the openList we sort it ascending by the nodes' F value
+						openList = openList.OrderBy(l => l.F).ToList();
+						
+						// currNode is the one with the lowest F (the first in an ascending list)
+						currNode = openList.First();
+						
+						// moving the node to the closedList from the openList
+						closedList.Add(currNode);
+						openList.Remove(currNode);
+					}
+				}
+			} while (unresolved);
+		}
+	}
+}

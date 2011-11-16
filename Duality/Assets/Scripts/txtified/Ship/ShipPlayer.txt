@@ -1,0 +1,108 @@
+using UnityEngine;
+
+public abstract class ShipPlayer : ShipBase {
+	public string changeColorBtn;
+	public string changeToGreenBtn;
+	public string changeToRedBtn;
+	
+	public string shootBtn;
+	
+	public string horizontalMoveAxis;
+	public string verticalMoveAxis;
+	
+	protected override void Update () {
+		base.Update();
+		
+		if (mInput.moveAxes != Vector2.zero) {
+			if (iTween.Count(gameObject, "MoveBy") == 0) {
+				Vector2 possibleTrgtPos = trgtPos + mInput.moveAxes;
+				
+				if (CanGoTo(possibleTrgtPos)) {
+					Move();
+						
+					//OrientShip();
+				}
+			}
+			
+			//OrientShip(); // not needed <= we're turning only when moving
+		}
+	}
+	
+	protected override void InputHandling () {
+		mInput = new BaseInput();
+		
+		if (Input.GetButtonDown(changeColorBtn))
+			mInput.colorChange = BaseInput.ColorChange.Invert;
+		else if (Input.GetButtonDown(changeToGreenBtn))
+			mInput.colorChange = BaseInput.ColorChange.Yin;
+		else if (Input.GetButtonDown(changeToRedBtn))
+			mInput.colorChange = BaseInput.ColorChange.Yang;
+		else
+			mInput.colorChange = BaseInput.ColorChange.None;
+			
+		if (Time.time - lastShotTime > gm.shootInterval) {
+			mInput.shoot = Input.GetButton(shootBtn);
+		}
+			
+		// no transversal motion allowed so
+			// if 2 axes are pushed
+		if (Input.GetAxisRaw(horizontalMoveAxis) != 0 && Input.GetAxisRaw(verticalMoveAxis) != 0) {
+			float horizontal = Input.GetAxis(horizontalMoveAxis);
+			float vertical = Input.GetAxis(verticalMoveAxis);
+			
+			// then go in the direction of the one pushed more
+				// based on the built in input smooting of Unity // or on the raw analog stick values
+			if (Mathf.Abs(horizontal) > Mathf.Abs(vertical))
+				mInput.moveAxes = Vector2.right * Mathf.Sign(horizontal);
+			else
+				mInput.moveAxes = Vector2.up * Mathf.Sign(vertical);
+		}
+		else if (Input.GetAxisRaw(horizontalMoveAxis) != 0 || Input.GetAxisRaw(verticalMoveAxis) != 0)
+			LinearPush();
+	}
+	
+	protected abstract void LinearPush ();
+	
+	/*
+	// ain't this shitty, ehh? ********************************************************************************
+	void OrientShip () {
+		//if (iTween.Count(gameObject, "RotateAdd") == 0) { // not needed <= we're turning only when moving
+			float angle = 0;
+			
+			if (Vector2.Scale(faceDir, mInput.moveAxes) == Vector2.zero) {
+				angle = 90;
+				
+				if (faceDir == -Vector2.right) {
+					//print("facing left");
+					angle *= mInput.moveAxes == Vector2.up ? -1 : 1;
+				}
+				else if (faceDir == Vector2.right) {
+					//print("facing right");
+					angle *= mInput.moveAxes == Vector2.up ? 1 : -1;
+				}
+				else if (faceDir == -Vector2.up) {
+					//print("facing up");
+					angle *= mInput.moveAxes == Vector2.right ? 1 : -1;
+				}
+				else if (faceDir == Vector2.up) {
+					//print("facing down");
+					angle *= mInput.moveAxes == Vector2.right ? -1 : 1;
+				}
+			}
+			else {
+				if (faceDir != mInput.moveAxes)
+					angle = 180;
+			}
+			
+			if (angle != 0) {
+				iTween.RotateAdd(gameObject, iTween.Hash("z", angle, "time", moveTime,
+					"easetype", iTween.EaseType.easeInOutSine , "space", Space.World));
+				
+				faceDir = mInput.moveAxes;
+			}
+			
+			angleTurned = angle;
+		//}
+	}
+	*/
+}

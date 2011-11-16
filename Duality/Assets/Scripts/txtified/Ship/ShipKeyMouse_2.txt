@@ -1,0 +1,10 @@
+using UnityEngine;
+
+public class ShipKeyMouse_2 : ShipPlayer_2 {
+	protected override void LinearPush () {
+		// nothing special to do - GetAxisRaw is sufficient for keyboard input
+			// "Since input is not smoothed, keyboard input will always be either -1, 0 or 1." - the doc
+			
+		mInput.moveAxes = new Vector2(Input.GetAxisRaw(horizontalMoveAxis), Input.GetAxisRaw(verticalMoveAxis));
+	}
+}

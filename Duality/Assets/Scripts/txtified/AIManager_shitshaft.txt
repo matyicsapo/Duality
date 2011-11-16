@@ -1,0 +1,369 @@
+/*
+ * escaping is possible by getting out of eyesight and then getting even more away trying not to step on positions in eyesight with player
+ * 		try to get to maybe halfway to core if it was just a small escape( if there are fellow enemies)
+ * 		
+ * 		if escaping don't lead player and core is in danger already than don't lead player there
+ * 			lead away from core
+ * 				+++++++++
+ * 				specify the amount of steps to escape - an approximate number
+ * 					
+ * 		else escape towards core
+ * 
+ * lowered update rate for AI but change of some things in world override this
+ * 		movement of player, death of a fellow enemy
+ * 
+ * explosions can be evaded by standing next to positions where 1 can instantenously get out of the line of it's shot
+ * 		AI should FAVOR such a position for fighting but shouldn't go crazy about it
+ * 
+ * if alone
+ * 		if has enough energy for a fight then go else wait
+ * 			if has enough health then fight
+ * 			else if core has little health then still go fighting*/
+
+/* offensive and defensive strategies
+ * 
+ * global
+ * 		if 	can get in eyesight with player
+ * 			health
+ * 
+ * offensive
+ * 		if energy <
+ * 
+ * defensive
+ * 
+ * 
+ * if can get to player then offensive (and maybe if has enough health)*/
+
+
+/* goal based behaviour
+ * 
+ * win
+ * strategy 1: kill enemy (shoot( || explode( || freeze)))
+ * 		if in eyesight with player while doing this then (stop and) shoot
+ * 
+ * 		find shortest path to be in eyesight with player
+ * 			follow path
+ * */
+
+/*
+ * offense defense based on health
+ * 
+ * energy & heat
+ * 		energy could be taken into account for AI for more into future tactics
+ * 		heat is in too small intervals for anything special
+ * 
+ * goal:
+ * 		description: kill enemy by shooting it
+ * 		subgoals: 	get in eyesight with player
+ * 					shoot player
+ * 
+ * goal:
+ * 		description: get in eyesight with player
+ * 		subgoals:	find shortest path to be in eyesight with player
+ * 					follow path node by node
+ * 
+ * ++++++++++++++++++++++++++++++++++++++++++++
+ * goal:
+ * 		description: encircle - occupy position not currently in eyesight with player
+ * 						but to preempt it
+ * 		subgoals:	find positions that help encircle player
+ * 					find path to "them"
+ * 					follow path
+ * 
+ * 
+ * find positions that help encircle the player
+ * 		find ((every) possible) path of player to be in eyesight with core
+ * 
+ * 		find path not taking enemies into account?
+ * 			so that after a death the death of a fellow enemy an other one can get ready to kill it if it can't get
+ * 			into eyesight with right now
+ * 
+ * 		this only required when no path can be found to enemy
+ * 
+ * 		ohh but what about explosions?.. ??????????????????????????????????????????????????????????????
+ * 
+ * 		team playing..
+ * 
+ * 		intercept these..what..c'mon..tuhardXD
+ * 			//find position on path closest to player that's not occupied
+ * 
+ * 
+ * ++++++++++++++++++++++++++++++++++++++++++++
+ *  **********stuff is just too complicated for my brain..***************************************/
+
+/* we are AI
+ * our goal is to win
+ * the condition of winning is killing the player
+ * we must not lose
+ * the condition of losing is death of the all of us or the death of the core
+ * we are aggressive
+ * killing the player is of higher priority then defending the core
+ * to kill the player we have to shoot it (we dont take explosions and freezing into account
+ * to shoot it we have to get in eyesight with him
+ * 
+ * can i get into eyesight with it?
+ * 	if so then that's my path
+ * otherwise
+ * 	is it only because a fellow hunter is in the way but won't be?
+ *	 		// when finding path care only about other players ultimate goal position (path.Last)
+ * 		if so then dont worry about going this path
+ * 	otherwise
+ * 		can i get a path to the core
+ * 		if so then this is my path
+ * 		otherwise
+ * 			if it's only cause of some bitch currently in the way
+ * 			...
+ * 
+ * if in eyesight with player (even if it happened during 
+ * 
+ * 
+ * 
+ * there are bad things
+ * 		overheating, freezing(gotta make this relevant, ?smaller heat range?), loosing all energy, explosion
+ * 
+ * 		only let overheating if it serves the greater good
+ * 		only let loosing all energy if it serves the greater good
+ * 		only let freezing if really need more energy and can't spend it on shit (moving in one place maybe)
+ * 		only let being caught in explosion if it server the greater good
+ * */
+
+
+
+
+
+/* 2 ai modes
+ * defensive
+ * 		find at levelstart the ineyesight positions of enemies' core
+ * 		if player moves then calculate it's shortest possible path to be ineyesight with core
+ * 		set ai's goal position players possible goal position
+ * 		if player is inside a given range then pursue it (aggressive)
+ * aggressive
+ * 		get ineyesight with player
+ * 		if cant then wait
+ * 			heat checking overwrite this
+ * 		if player is H closer to core then retreat back to a position*
+ * 			position in eyesight with core closest to player (with a path of course)
+ * 
+ * if ineyesight with player then shoot him
+ * 		if heat is too much or energy is too low( or health is too low) then retreat* (no but)
+ * 			+++++++++++act of retreting for self safety to be discussed++++++++++++
+ * 				leave possibilty for some shots, leave possibility of reaching some point if this(shit) happens
+ * 					(closest not ineyesight with player position) (no prob if in dir of player)
+ * 		if health is too low then retreat some other way
+ * 			if core can take a few more shots then retreat so that it does while trying to kill player
+ * 			else go on head to head with player and retreat cause of energy or heat
+ * */
+
+
+
+/* if alone
+ * 		keep energy in case sg. happens!?
+ * 
+ * 		if has enough health for a fight *
+ * 			if has enough energy for a fight *
+ * 				find shortest path to be in eyesight with player
+ * 				follow path
+ * 				if in eyesight with player then shoot it
+ * 			else
+ * 				escape
+ * 					if core has enough health for taking some more hits
+ * 						escape towards core *
+ * 					else
+ * 						escape away from core *
+ * 							if player seems to start to pursue core instead, then pursue it(the player) *
+ * 		else
+ * 			if core has enough health for taking some more hits
+ * 				+
+ * 			else
+ * 				+
+ * 
+ * if has fellow enemies( still alive)
+ * 		if has enough health for a fight * if other enemy is attacking it too we only need to get away so it attacks the other but this is only good if
+ * 				other has enough health cause dying is the absolute last resort
+ * 			if has enough energy for a fight
+ * */
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+/*	AI based on paths, movement
+ * 		don't even shoot just print message maybe
+ * 
+ *	dynamically changing roles/behaviours based on values for what to do by who
+ *
+ *	what to do - the role
+ *		the amount of enemis that can take this role
+ * 
+ * 	if player's shortest possible path to be ineyesight with core is below a given length
+ * 		then see if anyone ready for a fight with the player can get there faster
+ * 			the one who can do the most damage to the player based on it's(the player's) possible path
+ * */
+
+
+/*
+ * what to do - the role
+ * 		by who - the enemies given assigned this role
+ * 
+ * pursue player
+ * 		maximum 4 enemies
+ * 
+ * defend core
+ * 		maximum 4 enemies
+ * 
+ * wait
+ * 
+ * escape*/
+
+
+
+
+/* how to take fellow enemies and their assigned goals into account?
+ * 		AI update rate is not done every frame soo..
+ * 
+ * sort list of enemies by descending health
+ * 		so positions will be taken by stronger circles
+ * 
+ * occupied goals (or roles) are stored so that latter enemies don't consider them
+ * 		but no need to go back and check that if a position(role) would have been taken by an other enemy
+ * 			had it been better 'cause the simple sorting of enemies by health
+ * 				(or maybe i could sort them on a second level by energy - no need 'cause health has such a wide range that 2 same are unlikely except for startup)
+ * 			takes care of everything while also being much simpler to implement and process
+ * 				good enough!!*/
+
+
+
+
+
+/* fight player
+ * block core
+ * stand by core
+ * wait - do nothing
+ * escape towards core
+ * 		get out of eyesight and to "stand by core" - it surely has enough health otherwise this wouldn't get called
+ * 		node positions in eyesight with player have higher cost so they are less likely to be traversed - weighted positions wow!!
+ * escape away from core
+ * 		node positions farther away from core have lower cost - weighted positions wow!!
+ * 
+ * health descending sorting of enemies
+ * 
+ * path planning
+ * 
+ * 		// too much for now => if CanTraverse(position) fails then update ai. (PERIOD)
+ * 
+ * 		(if) ai update rate is not the same as of movement than problems can easily arise with 2 enemies going against each other in a 1 block wide path getting
+ * 			each stuck
+ * 		possible solutions
+ * 			# on triggering a "problem" a new ai update is run, which, well..hopefully unstucks ai but might easily make them act overall foolish
+ * 
+ * 			# taking ultimate goal positions of fellow enemies into account?
+ * 				partly good
+ * 			# taking whole path of fellow enemies into account?
+ * */
+ 
+
+void Update () {
+	if (Input.GetKey(KeyCode.Space)) {
+	
+		if (gm.on) {
+			
+			//print("**********");
+			if (lastPlayerPos != lm.playerShip.trgtPos) {
+				DestroyVisualisedPaths();
+				//lastPlayerPos = lm.playerShip.trgtPos;
+			}
+			
+			foreach (ShipEnemy enemy in aiEnemies) {
+				if (enemy.on && !enemy.shipRestarting) {
+					/*
+					 * find in eyesight positions with core
+					 * 
+					 * if player moved
+					 * 		then reevaluate path to be in eyesight with player
+					 * if ship's pathtogetineyesightwithplayer is null
+					 * 		then
+					 * 			find player H closest position ineyesight with core
+					 * 				if core can take a few more shots
+					 * 					then get in eyesight with the ineyesight position
+					 * 				else get in eyesight with the core
+					 * **/
+					
+					if (enemy == null)
+						continue;
+					
+					enemy.mInput = new ShipBase.BaseInput();
+					
+					if (iTween.Count(enemy.gameObject, "MoveBy") == 0 && enemy.energy >= gm.energy.costMove) {
+						if (!AlreadyInEyeSight(enemy.trgtPos, lm.playerShip.trgtPos)) {
+							
+							
+							/*
+							if (lastPlayerPos != lm.playerShip.trgtPos) {
+								enemy.path = Path_HeuristicClosestInEyeSightWith(enemy.trgtPos, lm.playerShip.trgtPos);
+								
+								if (enemy.path != null) {
+									enemy.nextNode = path[0];
+								}
+							}
+							
+							//if (!HlpVect.EqualInt(enemy.trgtPos, enemy.nextNode.pos)) {
+							if (enemy.nextNode != null) {
+							}
+							*/
+		
+							/*
+							if (enemy.path != null) {
+								if (lastPlayerPos != lm.playerShip.trgtPos) {
+									VisualisePath(enemy.path);
+								}
+								
+								if (Input.GetKeyDown(KeyCode.F)) {
+									enemy.mInput.moveAxes = path[0].pos - enemy.trgtPos;
+									
+									//print(path[0].pos + " " + enemy.trgtPos);
+									
+									//if (!lm.CanTraverse(enemy.trgtPos + enemy.mInput.moveAxes)) enemy.mInput.moveAxes = Vector2.zero;
+								}
+								
+							}
+							*/
+						}
+						else {
+							if (enemy.energy >= gm.energy.costShoot && Time.time - enemy.lastTimeShoot > gm.shoot.interval) {
+								enemy.mInput.shootDir = lm.playerShip.trgtPos - enemy.trgtPos;
+							}
+						}
+					}
+					
+					/*
+					// do something based on something else
+					
+					// cooperation between enemies
+						// store goal for each enemyship
+					
+						// do something based on something else - take already solved AIs into account
+					*/
+				}
+			}
+			
+			lastPlayerPos = lm.playerShip.trgtPos;
+		}
+		
+	}
+}

@@ -1,0 +1,74 @@
+using UnityEngine;
+using System.Collections.Generic;
+using System.Runtime.Serialization;
+using System.Reflection;
+
+public class Save {
+	[System.Serializable]
+	public struct Vect2Int {
+		public int x;
+		public int y;
+		
+		public Vect2Int (Vector2 v) {
+			x = (int)v.x;
+			y = (int)v.y;
+		}
+		
+		public Vect2Int (Vector3 v) {
+			x = (int)v.x;
+			y = (int)v.y;
+		}
+	}
+	
+	[System.Serializable]
+	public struct SavLev {
+		public Vect2Int dimensions;
+		public List<SavTeam> teams;
+		public List<Vect2Int> blocks;
+	}
+	
+	[System.Serializable]
+	public struct SavTeam {
+		public List<SavShip> ships;
+		public List<SavCore> cores;
+		public string teamName;
+		public Color color;
+	}
+	
+	[System.Serializable]
+	public struct SavShip {
+		public Vect2Int faceDir;
+		public Vect2Int pos;
+		public int teamID;
+	}
+	
+	[System.Serializable]
+	public struct SavCore {
+		public Vect2Int pos;
+		public int teamID;
+	}
+	
+	
+	// http://forum.unity3d.com/threads/48827-Problems-with-SerializationBinder - thanks to "carnevalle"
+	public sealed class AllowAllAssemblyVersionsDeserializationBinder : SerializationBinder {
+	    public override System.Type BindToType (string assemblyName, string typeName) {
+	        System.Type typeToDeserialize = null;
+	
+	        System.String currentAssembly = Assembly.GetExecutingAssembly().FullName;
+	
+	        // In this case we are always using the current assembly
+	        assemblyName = currentAssembly;
+	
+	        // Get the type using the typeName and assemblyName
+	        typeToDeserialize = System.Type.GetType(System.String.Format("{0}, {1}", typeName, assemblyName));
+	
+	        return typeToDeserialize;
+	    }
+	}
+	
+	public void Serialize () {
+	}
+	
+	public void DeSerialize () {
+	}
+}

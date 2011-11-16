@@ -1,0 +1,55 @@
+using UnityEngine;
+
+public abstract class ShipPlayer_2 : ShipBase_2 {
+	/* === color changing */
+	public string changeColorBtn;
+	public string changeToGreenBtn;
+	public string changeToRedBtn;
+	/* color changing === */
+	
+	/* === movement */
+	public string horizontalMoveAxis;
+	public string verticalMoveAxis;
+	/* movement === */
+	
+	protected override void InputHandling () {
+		mInput = new BaseInput();
+		
+		InputColorChange();
+		
+		if (iTween.Count(gameObject, "MoveBy") == 0) {
+			InputMovement();
+		}
+	}
+	
+	void InputColorChange () {
+		if (Input.GetButtonDown(changeColorBtn))
+			mInput.colorChange = BaseInput.ColorChange.Invert;
+		else if (Input.GetButtonDown(changeToGreenBtn))
+			mInput.colorChange = BaseInput.ColorChange.Yin;
+		else if (Input.GetButtonDown(changeToRedBtn))
+			mInput.colorChange = BaseInput.ColorChange.Yang;
+		else
+			mInput.colorChange = BaseInput.ColorChange.None;
+	}
+	
+	void InputMovement () {
+		// no transversal motion allowed so
+			// if 2 axes are pushed
+		if (Input.GetAxisRaw(horizontalMoveAxis) != 0 && Input.GetAxisRaw(verticalMoveAxis) != 0) {
+			float horizontal = Input.GetAxis(horizontalMoveAxis);
+			float vertical = Input.GetAxis(verticalMoveAxis);
+			
+			// then go in the direction of the one pushed more
+				// based on the built in input smooting of Unity // or on the raw analog stick values
+			if (Mathf.Abs(horizontal) > Mathf.Abs(vertical))
+				mInput.moveAxes = Vector2.right * Mathf.Sign(horizontal);
+			else
+				mInput.moveAxes = Vector2.up * Mathf.Sign(vertical);
+		}
+		else if (Input.GetAxisRaw(horizontalMoveAxis) != 0 || Input.GetAxisRaw(verticalMoveAxis) != 0)
+			LinearPush();
+	}
+	
+	protected abstract void LinearPush ();
+}

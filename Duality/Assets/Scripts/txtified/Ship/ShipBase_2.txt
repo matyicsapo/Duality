@@ -1,0 +1,90 @@
+using UnityEngine;
+
+public abstract class ShipBase_2 : MonoBehaviour {
+	/* === color changing */
+	public bool isYin;
+	/* color changing === */
+	
+	Material mMaterial;
+	
+	/* === movement */
+	[System.NonSerialized]
+	public Vector2 trgtPos;
+	[System.NonSerialized]
+	public Vector2 lastPos;
+	/* movement === */
+	
+	Transform mTransform;
+	
+	protected class BaseInput {
+		public enum ColorChange {None, Invert, Yin, Yang}
+		public ColorChange colorChange;
+		
+		public bool shoot;
+		
+		public Vector2 moveAxes;
+	}
+	protected BaseInput mInput;
+	
+	protected GameManager_2 gm;
+	
+	protected virtual void Start () {
+		gm = GameObject.FindWithTag("GameManager").GetComponent<GameManager_2>();
+		
+		mTransform = transform;
+		
+		iTween.Init(gameObject); // advised by pixelplacement
+		// gun doesn't rotate using iTweens (doesn't really rotate at all so it doesn't need this (for now atleast***)
+		lastPos = trgtPos = mTransform.position;
+		
+		mMaterial = renderer.material;
+		mMaterial.color = isYin ? gm.color.yin : gm.color.yang;
+	}
+	
+	protected abstract void InputHandling ();
+	
+	void InputHandlingBase () {
+		if (gm.on) {
+			InputHandling();
+		}
+	}
+	
+	protected virtual void Update () {
+		InputHandlingBase();
+		
+		ActionColorChange();
+		
+		if ( ! HlpVect.EqualInt(mInput.moveAxes, Vector2.zero) ) {
+			ActionMovement();
+		}
+	}
+	
+	void ActionColorChange () {
+		switch (mInput.colorChange) {
+			case BaseInput.ColorChange.Invert:
+				isYin = ! isYin;
+				mMaterial.color = isYin ? gm.color.yin : gm.color.yang;
+				break;
+			case BaseInput.ColorChange.Yin:
+				if (isYin != true) {
+					isYin = true;
+					mMaterial.color = gm.color.yin;
+				}
+				break;
+			case BaseInput.ColorChange.Yang:				
+				if (isYin != false) {
+					isYin = false;
+					mMaterial.color = gm.color.yang;
+				}
+				break;
+		}
+	}
+	
+	void ActionMovement () {
+		lastPos = trgtPos;
+		trgtPos += mInput.moveAxes;
+		
+		iTween.MoveBy(gameObject, iTween.Hash("amount", (Vector3)mInput.moveAxes, "time", gm.moveTime,
+			"easetype", iTween.EaseType.linear, "space", Space.World));
+	}
+}

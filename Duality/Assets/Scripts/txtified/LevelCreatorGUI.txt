@@ -1,0 +1,149 @@
+using UnityEngine;
+using System.Text.RegularExpressions;
+
+public class LevelCreatorGUI : MonoBehaviour {
+	public Transform objPlane;
+	public Material matShip;
+	public Material matCore;
+	public Material matBlock;
+	
+	string levelName = "Unnamed";
+	
+	Vector2 dimensions = new Vector2(20, 10);
+	
+	int selectedTool = 0;
+	
+	int sp = 10;
+	
+	public Texture[] tools;
+	
+	CreatorLevelManager lm;
+	
+	void Start () {
+		lm = GameObject.FindWithTag("LevelManager").GetComponent<CreatorLevelManager>();
+	}
+	
+	void OnGUI () {
+		GUILayout.BeginVertical("box");//, GUILayout.Height(Screen.height));
+			GUILayout.BeginHorizontal();
+				GUILayout.Label("Levelname");
+				levelName = GUILayout.TextField(levelName);
+			GUILayout.EndHorizontal();
+		
+			if (GUILayout.Button("Save")) {
+				Debug.Log("Save-ing not yet implemented");
+			}
+			else if (GUILayout.Button("Load")) {
+				Debug.Log("Load-ing not yet implemented");
+			}
+		
+			GUILayout.Space(sp);
+		
+			GUILayout.Label("Dimensions");
+			GUILayout.BeginHorizontal();
+				string regexPattern = "[0-9]+";
+				int maxLength = 5;
+				
+				GUILayout.Label("X:");
+				string result = "";
+				MatchCollection mc =
+					Regex.Matches(GUILayout.TextField(lm.levelDimensions.x.ToString(), maxLength), regexPattern);
+				foreach (Match m in mc) {
+					result += m;
+				}
+				lm.levelDimensions.x = float.Parse(result);
+				
+				GUILayout.Label("Y:");
+				result = "";
+				mc = Regex.Matches(GUILayout.TextField(lm.levelDimensions.y.ToString(), maxLength), regexPattern);
+				foreach (Match m in mc) {
+					result += m;
+				}
+				lm.levelDimensions.y = float.Parse(result);
+			GUILayout.EndHorizontal();
+		
+			GUILayout.Space(sp);
+		
+			GUILayout.Label("Tools");
+			selectedTool = GUILayout.SelectionGrid(selectedTool, tools, 2);
+		
+			GUILayout.Space(sp);
+			
+			if (GUILayout.Button("Quit")) {
+				Debug.Log("Quit-ing not yet implemented");
+			}
+		GUILayout.EndVertical();
+		
+		if (GUI.RepeatButton(new Rect(Screen.width - 135, Screen.height - 200, 60, 60), "Up")) {
+			GameObject.FindWithTag("MainCamera").transform.position += new Vector3(0,
+		    	Time.deltaTime * 10);
+		}
+		else if (GUI.RepeatButton(new Rect(Screen.width - 135, Screen.height - 70, 60, 60), "Down")) {
+			GameObject.FindWithTag("MainCamera").transform.position -= new Vector3(0,
+		    	Time.deltaTime * 10);
+		}
+		else if (GUI.RepeatButton(new Rect(Screen.width - 200, Screen.height - 135, 60, 60), "Left")) {
+			GameObject.FindWithTag("MainCamera").transform.position += new Vector3(
+		    	Time.deltaTime * 10, 0);
+		}
+		else if (GUI.RepeatButton(new Rect(Screen.width - 70, Screen.height - 135, 60, 60), "Right")) {
+			GameObject.FindWithTag("MainCamera").transform.position -= new Vector3(
+		    	Time.deltaTime * 10, 0);
+		}
+	}
+	
+	void Update () {
+		Vector3 wMouse = GameObject.FindWithTag("MainCamera").camera.ScreenToWorldPoint(Input.mousePosition);
+		wMouse = new Vector3(Mathf.Round(wMouse.x), Mathf.Round(wMouse.y), 0);
+		
+		if (lm.InLevelBounds(wMouse))
+			objPlane.position = wMouse;
+		
+		switch (selectedTool) {
+			case 0:
+				objPlane.renderer.material = matShip;
+				break;
+			case 1:
+				objPlane.renderer.material = matCore;
+				break;
+			case 2:
+				objPlane.renderer.material = matBlock;
+				break;
+		}
+		
+		if (Input.GetMouseButtonDown(0)) {
+			CreatorLevelManager.PlaceableType type;
+			switch (selectedTool) {
+				case 0:
+					type = CreatorLevelManager.PlaceableType.Ship;
+					break;
+				case 1:
+					type = CreatorLevelManager.PlaceableType.Core;
+					break;
+				default: //case 2:
+					type = CreatorLevelManager.PlaceableType.Block;
+					break;
+			}
+			lm.TryNPlace(objPlane, type);
+		}
+	}
+	
+	void LateUpdate () {
+		if (Input.GetKey(KeyCode.UpArrow)) {
+			GameObject.FindWithTag("MainCamera").transform.position += new Vector3(0,
+		    	Time.deltaTime * 10);
+		}
+		else if (Input.GetKey(KeyCode.DownArrow)) {
+			GameObject.FindWithTag("MainCamera").transform.position -= new Vector3(0,
+		    	Time.deltaTime * 10);
+		}
+		else if (Input.GetKey(KeyCode.LeftArrow)) {
+			GameObject.FindWithTag("MainCamera").transform.position += new Vector3(
+		    	Time.deltaTime * 10, 0);
+		}
+		else if (Input.GetKey(KeyCode.RightArrow)) {
+			GameObject.FindWithTag("MainCamera").transform.position -= new Vector3(
+		    	Time.deltaTime * 10, 0);
+		}
+	}
+}

@@ -1,0 +1,65 @@
+using UnityEngine;
+using System.Collections.Generic;
+
+public class CreatorLevelManager : MonoBehaviour {
+	/*magic number replacaments ===*/
+	float gridBaseSize = 10; // built-in plane mesh size
+	float gridDepthOffset = -.2f;
+	float cameraDepthOffset = 10;
+	/*=== magic number replacaments*/
+	
+	[System.NonSerialized]
+	public Vector2 levelDimensions = new Vector2(20, 10);
+	
+	GameObject blockHolder;
+	List<Vector2> blockPosList;
+	
+	List<ShipBase_2> ships;
+	//public List<Core> cores;
+	
+	public enum PlaceableType {Ship, Core, Block}
+	
+	public void Awake () {
+		blockHolder = null;
+		blockPosList = new List<Vector2>();
+		
+		ships = new List<ShipBase_2>();
+	}
+	
+	public bool TryNPlace (Transform element, PlaceableType type) {
+		if ( InLevelBounds(element.position) && !blockPosList.Exists(l => HlpVect.EqualInt(l, element.position))
+				&& !ships.Exists(l => HlpVect.EqualInt(l.trgtPos, element.position))
+				/*&& !cores.Exists(l => HlpVect.EqualInt(transform.position, element.position))*/ ) {
+			
+			Transform instantiated = Instantiate(element, element.position, element.rotation) as Transform;
+			
+			switch (type) {
+				case PlaceableType.Ship:
+					ships.Add(instantiated.GetComponent<ShipBase_2>());
+					break;
+				case PlaceableType.Core:
+					break;
+				case PlaceableType.Block:	
+					if (blockHolder == null) {
+						blockHolder = new GameObject("Blocks");
+						blockHolder.transform.parent = transform;
+					}
+					
+					instantiated.parent = blockHolder.transform;
+					
+					blockPosList.Add(instantiated.position);
+					break;
+			}
+		}
+		
+		return false;
+	}
+	
+	public bool InLevelBounds (Vector2 pos) {
+		if (0 <= (int)pos.x && (int)pos.x <= levelDimensions.x - 1
+				&& 0 <= (int)pos.y && (int)pos.y <= levelDimensions.y - 1)
+			return true;
+		else
+			return false;
+	}
+}

@@ -1,0 +1,172 @@
+using UnityEngine;
+using System.Collections.Generic;
+
+using System.IO;
+using System.Runtime.Serialization.Formatters.Binary;
+
+using System.Collections;
+
+using System.Runtime.Serialization.Formatters;
+
+public class LevelManager : MonoBehaviour {
+	/*magic number replacaments ===*/
+	float gridBaseSize = 10; // built-in plane mesh size
+	float gridDepthOffset = -.2f;
+	float cameraDepthOffset = 10;
+	/*=== magic number replacaments*/
+	
+	public string levelNameToLoad;
+
+	public Vector2 levelDimensions;
+	Transform grid;
+	public bool borderedGrid;
+	
+	//[System.NonSerialized]
+	public List<Vector2> blockPosList;
+	public int cntBlocks;
+	public Transform blockPrefab;
+	
+	[System.NonSerialized]
+	public List<Shot> bulletList;
+	
+	/*
+	[System.NonSerialized]
+	public List<Core> coreList;
+	
+	[System.NonSerialized]
+	public List<ShipBase> shipList;
+	*/
+	
+	public List<ShipBase> ships;
+	public List<Core> cores;
+	//public 
+	List<Vector2> unBlockablePosList;
+
+	void Awake () {
+		grid = transform.Find("Grid");
+	
+		if (borderedGrid) {
+			grid.renderer.material.mainTextureScale = new Vector2(levelDimensions.x, levelDimensions.y);
+			grid.renderer.material.mainTextureOffset = new Vector2(0, 0);
+			grid.localScale = new Vector3(levelDimensions.x, gridBaseSize, levelDimensions.y) / gridBaseSize;
+		}
+		else {
+			grid.renderer.material.mainTextureScale = new Vector2(levelDimensions.x - 1, levelDimensions.y - 1);
+			grid.renderer.material.mainTextureOffset = new Vector2(.5f, .5f);
+			grid.localScale = new Vector3(levelDimensions.x - 1, gridBaseSize, levelDimensions.y - 1) / gridBaseSize;
+		}
+		
+		grid.position = new Vector3(levelDimensions.x - 1, levelDimensions.y - 1, gridDepthOffset * 2) / 2;
+		
+		bulletList = new List<Shot>();
+		
+		// needed only if camera is not following anything and want it to be centered on level
+		GameObject.FindWithTag("MainCamera").transform.position =
+			new Vector3(levelDimensions.x - 1, levelDimensions.y - 1, cameraDepthOffset * 2) / 2;
+			
+		unBlockablePosList = new List<Vector2>();
+		foreach (ShipBase s in ships) {
+			unBlockablePosList.Add(s.transform.position);
+		}
+		foreach (Core c in cores) {
+			unBlockablePosList.Add(c.transform.position);
+		}
+		
+		cntBlocks = Mathf.Clamp(cntBlocks, 0,
+			(int)(levelDimensions.x * levelDimensions.y) - 4);
+		if (cntBlocks > 0)
+			BlockSetup();
+			
+		LoadLevelFromFile(levelNameToLoad); // not really workin' ???
+	}
+	
+	public bool InLevelBounds (Vector2 pos) {
+		if (0 <= (int)pos.x && (int)pos.x <= levelDimensions.x - 1
+				&& 0 <= (int)pos.y && (int)pos.y <= levelDimensions.y - 1)
+			return true;
+		else
+			return false;
+	}
+	
+	void BlockSetup () {
+		if (blockPosList == null)
+			blockPosList = new List<Vector2>();
+		
+		GameObject blockHolder = new GameObject("Blocks");
+		blockHolder.transform.parent = transform;
+		
+		for (int i = 0; i < cntBlocks; i++) {
+			Vector2 v = Vector2.zero;
+		
+			do {
+				v = new Vector2(Random.Range(0, (int)levelDimensions.x), Random.Range(0, (int)levelDimensions.y));
+				
+				// repeat while it's in blockPosList(that is this pos has been already been added to block positions)
+					// // or it's in unblockables
+			} while (blockPosList.Exists(w => w.x == v.x && w.y == v.y)
+					|| unBlockablePosList.Exists(w => w.x == v.x && w.y == v.y));
+			
+			blockPosList.Add(v);
+			
+			(Instantiate(blockPrefab, new Vector3(v.x, v.y, blockPrefab.position.z), blockPrefab.rotation)
+				as Transform).parent = blockHolder.transform;
+		}
+	}
+	
+	void LoadLevelFromFile (string levelName) {
+		string fileName = levelName + ".lev";
+		
+		FileStream fs = null;
+		try {
+			fs = new FileStream(fileName, FileMode.Open, FileAccess.Read);
+		}
+		catch (FileNotFoundException) {
+			return; // there's not much to handle about this
+		}
+		
+		StreamReader sr = new StreamReader(fs);
+		
+		//EdHlp.LevSav level = new EdHlp.LevSav();
+		
+		if (!sr.EndOfStream) {
+			string s = sr.ReadLine();
+			byte[] ba = System.Convert.FromBase64String(s);
+			
+			MemoryStream ms = new MemoryStream(ba);
+			BinaryFormatter bf = new BinaryFormatter();
+			
+			bf.Binder = new EdHlp.AllowAllAssemblyVersionsDeserializationBinder();
+			
+			try {
+				//level = (EdHlp.LevSav)
+				bf.Deserialize(ms);
+			}
+			catch {
+				Debug.Log("WTFERROR");
+				Application.Quit();
+			}
+		}
+		
+		sr.Close();
+		fs.Close();
+		// load from file **************************************************************************
+		
+		/* ..if loading would work
+		if (level.blocks.Length != 0) {
+			GameObject blockHolder = new GameObject("Blocks");
+			blockHolder.transform.parent = transform;
+			
+			foreach (EdHlp.Vect2Int v2iBlockPos in level.blocks) {
+			}
+		}
+		*/
+		
+		/*
+		print(level.blocks.Length);
+		
+		foreach (EdHlp.Vect2Int blockPos in level.blocks) {
+			Transform newBlock = Instantiate(blockPrefab) as Transform;
+			newBlock.position = new Vector3(blockPos.x, blockPos.y);
+		}*/
+	}
+}

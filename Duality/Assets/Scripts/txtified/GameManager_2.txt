@@ -1,0 +1,14 @@
+using UnityEngine;
+
+public class GameManager_2 : MonoBehaviour {
+	public bool on = true;
+	
+	[System.Serializable]
+	public class ColorChange {
+		public Color yin;
+		public Color yang;
+	}
+	public ColorChange color;
+	
+	public float moveTime;
+}
